@@ -10,6 +10,8 @@ Right now, the CDK stack just creates an EC2 instance.
 * Set up wordpress
 * Set up deployment stack?
 
+https://docs.aws.amazon.com/codedeploy/latest/userguide/tutorials-wordpress-configure-content.html
+
 # Setup
 
 ## AWS CDK
