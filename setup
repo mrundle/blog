@@ -1,0 +1,4 @@
+brew install aws-cdk
+cdk bootstrap aws://account-number/region
+mkdir cdk/ && cd cdk/
+cdk init app --language python
