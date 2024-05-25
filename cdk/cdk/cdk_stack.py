@@ -61,9 +61,9 @@ class CdkStack(Stack):
         sg = ec2.SecurityGroup(
             self, "blog-host-sg", vpc=vpc, allow_all_outbound=True,
         )
-        sg.add_ingress_rule(
-            ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "allow ssh access",
-        )
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(22), "allow ssh access"),
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(80), "allow http access"),
+        sg.add_ingress_rule(ec2.Peer.any_ipv4(), ec2.Port.tcp(443), "allow https access"),
 
         # create Key Pair
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/CfnKeyPair.html
