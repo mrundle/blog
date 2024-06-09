@@ -7,10 +7,15 @@ Right now, the CDK stack just creates an EC2 instance.
 ## TODO
 
 * Set up billing alarm
-* Set up wordpress
+* Automate wordpress setup
 * Set up deployment stack?
 
+https://docs.aws.amazon.com/linux/al2/ug/hosting-wordpress.html#install-wordpress
 https://docs.aws.amazon.com/codedeploy/latest/userguide/tutorials-wordpress-configure-content.html
+https://aws.amazon.com/tutorials/deploy-wordpress-with-amazon-rds
+
+Import/export:
+* https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/SQLServer.Procedural.Importing.html
 
 # Setup
 
@@ -37,7 +42,7 @@ cdk synth
 
 To see what changes would be made:
 ```
-cdk --profile diff
+cdk --profile blog diff
 ```
 
 To actually deploy:
@@ -45,8 +50,41 @@ To actually deploy:
 cdk --profile blog deploy
 ```
 
+To destroy the stack:
+
+```
+cdk --profile blog destroy
+```
+
 ### Host login
 
 ```
 tools/ssh-to-instance.sh
+```
+
+## Domain / DNS
+
+* Using Squarespace domains, formerly Google Domains
+* Configured the DNS 'A' entry to point to the EC2 instance IP
+
+## Wordpress
+
+Followed tutorials for setup on the AWS Instance. This was essentially all manual.
+The one thing I did via AWS was set up an RDS instance. Configuration:
+
+```
+CREATE DATABASE wordpress;
+CREATE USER 'wordpress' IDENTIFIED BY 'wordpress-pass';
+GRANT ALL PRIVILEGES ON wordpress.* TO wordpress;
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+## SSL/HTTPS Cert
+
+Using the LetsEncrypt CA via Certbot: https://certbot.eff.org/
+
+```
+sudo yum install -y certbot python3-certbot-apache
+sudo certbot --apache
 ```
