@@ -31,6 +31,14 @@ source .venv/bin/activate
 python -m pip install -r requirements.txt
 ```
 
+To initialize venv from existing checkout:
+
+```
+cd cdk
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
 The actual CDK stack definition is located at `cdk/cdk/cdk_stack.py`.
 
 ### Build and Deploy
