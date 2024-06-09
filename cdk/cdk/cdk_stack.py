@@ -3,6 +3,7 @@ from aws_cdk import (
     Stack,
     aws_s3 as s3,
     aws_ec2 as ec2,
+    aws_iam as iam,
     # aws_sqs as sqs,
     aws_rds as rds,
     RemovalPolicy,
@@ -27,6 +28,9 @@ class CdkStack(Stack):
         self.BLOG_VPC_CIDR = "10.0.0.0/16"
         self.MYSQL_PORT = 3306
 
+        self.bucket = None
+        self.blog_instance = None
+
         self.setup_s3()
         self.setup_ec2()
         self.setup_billing_alarm()
@@ -39,7 +43,7 @@ class CdkStack(Stack):
         # note that the bucket name will actually be created by cdk,
         # and won't be exactly "mrundle-blog-bucket"
         #bucket = s3.Bucket(self, "mrundle-blog-bucket", versioned=False)
-        bucket = s3.Bucket(
+        self.bucket = s3.Bucket(
             self,
             "blog-contents",
             versioned=False,
@@ -66,6 +70,13 @@ class CdkStack(Stack):
             ],
         )
 
+        # add gateway/interface endpoints
+        vpc.add_gateway_endpoint("s3", service=ec2.GatewayVpcEndpointAwsService.S3)
+        # XXX/NOTE: interface endpoints are pretty pricey?
+        #vpc.add_interface_endpoint("ssm", service=ec2.InterfaceVpcEndpointAwsService.SSM)
+        #vpc.add_interface_endpoint("ec2messages", service=ec2.InterfaceVpcEndpointAwsService.EC2_MESSAGES)
+        #vpc.add_interface_endpoint("ssmmessages", service=ec2.InterfaceVpcEndpointAwsService.SSM_MESSAGES)
+
         # create security group
         sg = ec2.SecurityGroup(
             self, "blog-host-sg", vpc=vpc, allow_all_outbound=True,
@@ -85,7 +96,7 @@ class CdkStack(Stack):
         # create EC2 instance
         # https://docs.aws.amazon.com/cdk/api/v2/python/aws_cdk.aws_ec2/README.html
         # https://docs.aws.amazon.com/linux/al2023/ug/what-is-amazon-linux.html
-        instance = ec2.Instance(
+        self.blog_instance = ec2.Instance(
             self,
             "blog-host-instance",
             instance_type=ec2.InstanceType("t3.micro"),
@@ -99,7 +110,38 @@ class CdkStack(Stack):
             key_name=keypair.key_name,
         )
 
-        CfnOutput(self, "InstanceId", value=instance.instance_id)
+        # s3 bucket grants
+        self.blog_instance.role.add_to_policy(iam.PolicyStatement(
+            effect=iam.Effect.ALLOW,
+            resources=["arn:aws:s3:::*"],
+            actions=["s3:ListAllMyBuckets"],
+        ))
+        self.blog_instance.role.add_to_policy(iam.PolicyStatement(
+            effect=iam.Effect.ALLOW,
+            resources=[self.bucket.bucket_arn],
+            actions=["s3:ListBucket"],
+        ))
+        self.blog_instance.role.add_to_policy(iam.PolicyStatement(
+            effect=iam.Effect.ALLOW,
+            resources=[f"{self.bucket.bucket_arn}/*"],
+            actions=[
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject",
+                "s3:PutObjectAcl"
+            ]
+        ))
+        #instance.role.add_to_policy(iam.PolicyStatement(
+        #    effect=iam.Effect.ALLOW,
+        #    resources=["*"],
+        #    actions=[
+        #        "ec2messages:*",
+        #        "ssmmessages:*",
+        #        "ssm:UpdateInstanceInformation",
+        #    ]
+        #))
+
+        CfnOutput(self, "InstanceId", value=self.blog_instance.instance_id)
 
         #
         # set up rds instance
